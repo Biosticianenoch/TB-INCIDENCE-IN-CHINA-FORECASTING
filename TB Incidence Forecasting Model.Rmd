@@ -1,0 +1,146 @@
+---
+title: "TUBERCULOSIS FORECASTING MODEL"
+author: "Enock Bereka"
+date: "2025-01-26"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load necessary libraries
+```{r warning=FALSE, message=FALSE}
+library(forecast)
+library(tseries)
+library(ggplot2)
+library(readxl)
+```
+
+## Load and inspect the dataset
+```{r warning=FALSE, message=FALSE}
+tb <- read_excel("C:/Users/PC/OneDrive/Desktop/Data Science/Datasets/Datasets/12879_2020_5033_MOESM1_ESM.xlsx")
+head(tb)
+str(tb)
+min(tb$Time)
+max(tb$Time)
+```
+
+## Converting the data to a time series object
+```{r warning=FALSE, message=FALSE}
+tb <- ts(tb$`TB incidence（per 100,000 populations）`, start=c(2012,01), end=c(2019, 06), frequency = 12)
+attributes(tb)
+```
+
+## Creating a time series plot
+```{r warning=FALSE, message=FALSE}
+plot(tb, xlab = "Time", ylab = "TB Incidence", 
+     main = "Monthly incidence of Tuberculosis")
+abline(reg = lm(tb ~ time(tb)))
+```
+## The time series plot indicates seasonal fluctuations of tuberculosis incidence.
+
+## General trend
+```{r warning=FALSE, message=FALSE}
+plot(aggregate(tb, FUN = mean), ylab = "TB Incidence", main = "Incidence of Tuberculosis")
+```
+## There is a general decrease in tuberculosis incidence from 2012-2018.
+
+## Decomposition of the Time series
+```{r warning=FALSE, message=FALSE}
+decomposition <- decompose(tb)
+plot(decomposition)
+```
+## From the above figure, in the trend part we can see that there is downward trend and from the seasonal part we can see that there is reoccurring seasonal patterns (which indicates seasonality).
+
+## Check for Stationarity
+## Plot the ACF plot
+```{r warning=FALSE, message=FALSE}
+acf(tb)
+```
+
+## Plot the PACF plot
+```{r warning=FALSE, message=FALSE}
+pacf(tb)
+```
+## From the ACF and PACF plots we can see that the vertical lines crossing the blue horizontal line which
+indicates the high correlation between the present value sand its lagged versions. Therefore, the 
+time series is not stationary.
+
+## Perform ADF test
+```{r warning=FALSE, message=FALSE}
+adf.test(tb, k = 15)
+```
+## The data is not stationary since the p-value from the test is greater than 0.05.
+
+## Perform KPSS test
+```{r warning=FALSE, message=FALSE}
+kpss.test(tb)
+```
+## The data is not stationary since the p-value from the test is less than 0.05.
+
+## Model building
+```{r warning=FALSE, message=FALSE}
+arima_model <- auto.arima(tb)
+summary(arima_model)
+```
+
+## Before using this model for prediction, we have to check whether it is stationary or not using ACF and PACF plot.
+```{r warning=FALSE, message=FALSE}
+acf(ts(arima_model$residuals))
+```
+```{r warning=FALSE, message=FALSE}
+pacf(ts(arima_model$residuals))
+```
+## From the above ACF and PACF plots we can infer that all the vertical lines at each lags falls inside the horizontal boundary, which indicates that the time series is stationary after applying seasonal differencing using the auto.arima model. So, now we have to predict the future value based on the observed values.
+
+## Perform residual diagnostic analysis
+## Plot a histogram of residuals
+```{r warning=FALSE, message=FALSE}
+residuals <- residuals(arima_model)
+hist(residuals, main="Histogram of Residuals", 
+     xlab="Residuals", col="skyblue", border="black", 
+     breaks=20, probability=TRUE)
+# Add a normal density curve
+lines(density(residuals), col="red", lwd=2)
+```
+## The histogram indicates that the residuals are normally distributed
+
+## Forecasting the incidence of TB for the next 8 years
+```{r warning=FALSE, message=FALSE}
+forecast_future <- forecast(arima_model, level = c(95), h = 96)
+forecast_future
+```
+
+## Visualize your Predictions
+```{r warning=FALSE, message=FALSE}
+plot(forecast_future)
+```
+
+## Plot the forecast using ggplot2
+```{r warning=FALSE, message=FALSE}
+forecast_df <- data.frame(
+  Date = time(forecast_future$mean),
+  Forecast = as.numeric(forecast_future$mean),
+  Lower = as.numeric(forecast_future$lower[, 1]),
+  Upper = as.numeric(forecast_future$upper[, 1]))
+ggplot(forecast_df, aes(x = Date, y = Forecast)) +
+  geom_line(color = "red") +
+  theme_classic()+
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2) +
+  labs(title = "Incidence of Tuberculosis Forecast", x = "Year", y = "TB Incidence")
+```
+
+## Goodness of fit of the model
+##Ljung-Box test
+```{r warning=FALSE, message=FALSE}
+Box.test(forecast_future$residuals, type = "Ljung-Box")
+
+```
+
+## From the results of Ljung-Box test, we can infer that the p-value is greater than 0.05. Therefore,
+the given model is a good-fit.
+
+## The results suggests that TB incidence will experience slight decrease, and its changing 
+trend will be similar to before. The prediction results can provide help for reallocating resources so as to get better in control and prevention of TB in Guangxi, China.
+
