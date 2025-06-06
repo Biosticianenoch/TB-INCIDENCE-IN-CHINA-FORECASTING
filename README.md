@@ -1,5 +1,5 @@
 
-# 🧪 Tuberculosis Incidence Forecasting Model
+# 🧪 Tuberculosis Incidence Forecasting in China
 
 ## 📌 Project Overview
 
@@ -112,7 +112,7 @@ library(readxl)
 
 ## 📬 Contact & Collaboration
 
-For feedback or collaboration, feel free to reach out via [LinkedIn](https://linkedin.com) or email.
+For feedback or collaboration, feel free to reach out via [LinkedIn](www.linkedin.com/in/enock-bereka) or email.
 
 ---
 
